@@ -27,5 +27,5 @@
           - name: Deploy to GitHub Pages
             uses: peaceiris/actions-gh-pages@v4
             with:
-              github_token: ${{ secrets.mm_token }}
+              github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./out # Directory containing your static Next.js output
