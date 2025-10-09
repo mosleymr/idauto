@@ -4,7 +4,7 @@
   "private": true,
   "homepage": "https://mosleymr.github.io/idauto",
   "scripts": {
-    "deployToGitHub": "npm run build && gh-pages -b master -d build",
+    "deployToGitHub": "npm run build && gh-pages -b master -d src",
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
