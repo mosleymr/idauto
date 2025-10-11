@@ -13,7 +13,7 @@ export default function AzureADSecurityDashboard() {
         <p className="text-slate-400">Identity and Access Threat Dashboard for CISOs</p>
       </motion.div>
 
-      <Card className="bg-slate-900 border-slate-800 text-white">
+  <Card title="Overview of users that represent a high risk based on inappropriate permissions, non-compliant passwords or other factors" className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> Identity Threat Overview</CardTitle>
         </CardHeader>
@@ -40,7 +40,7 @@ export default function AzureADSecurityDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-900 border-slate-800 text-white">
+  <Card title="Summary of rates of MFA adoption versus legacy authentication" className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Lock className="text-purple-400"/> Authentication & Access</CardTitle>
         </CardHeader>
@@ -65,7 +65,7 @@ export default function AzureADSecurityDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-900 border-slate-800 text-white">
+  <Card title="Excessive permissions and use of PIM for admin access" className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Users className="text-pink-400"/> Privileged Access</CardTitle>
         </CardHeader>
