@@ -4,13 +4,20 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { Shield, Lock, Users, AlertTriangle, Activity, Key, Cloud, Mail, Share2 } from "lucide-react"
 import { motion } from "framer-motion"
+import Image from 'next/image'
+import logo from '@/app/idauto_light.png'
 
 export default function GoogleWorkspaceIdentityDashboard() {
   return (
     <div className="p-6 grid grid-cols-3 gap-6 bg-slate-950 text-white min-h-screen">
-      <motion.div className="col-span-3 mb-2" initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}}>
-        <h1 className="text-3xl font-bold mb-1">Google Workspace Identity Security Overview</h1>
-        <p className="text-slate-400">Identity and Access Management Dashboard for CISOs</p>
+      <motion.div className="col-span-3 mb-2 flex items-center" initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}}>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold mb-1">Google Workspace Identity Security Overview</h1>
+          <p className="text-slate-400">Identity and Access Management Dashboard for CISOs</p>
+        </div>
+        <div className="ml-4">
+          <Image src={logo} alt="idauto logo" width={40} height={40} className="h-10 w-auto" />
+        </div>
       </motion.div>
 
       <Card className="bg-slate-900 border-slate-800 text-white">
