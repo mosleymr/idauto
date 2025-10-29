@@ -21,6 +21,63 @@ export default function IdentityDashboard() {
   const [thumbTop, setThumbTop] = useState(0)
   const [thumbHeight, setThumbHeight] = useState(0)
   const [thumbVisible, setThumbVisible] = useState(false)
+  const thumbRef = useRef<HTMLDivElement | null>(null)
+  const draggingRef = useRef(false)
+  const dragCleanupRef = useRef<() => void | null>(null)
+
+  const onThumbPointerDown = (clientY: number) => {
+    const el = adminScrollRef.current
+    if (!el) return
+    draggingRef.current = true
+    document.body.style.userSelect = 'none'
+
+    const wrapperRect = el.getBoundingClientRect()
+    const clientHeight = el.clientHeight
+    const scrollHeight = el.scrollHeight
+    const maxTop = Math.max(0, clientHeight - thumbHeight)
+
+    const move = (pageY: number) => {
+      const y = pageY - wrapperRect.top
+      const clamped = Math.max(0, Math.min(y, maxTop))
+      const newScrollTop = (clamped / (maxTop || 1)) * (scrollHeight - clientHeight)
+      el.scrollTop = newScrollTop
+    }
+
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const pageY = (e as TouchEvent).touches ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY
+      move(pageY)
+    }
+
+    const onUp = () => {
+      draggingRef.current = false
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', onMove as any)
+      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('touchmove', onMove as any)
+      document.removeEventListener('touchend', onUp)
+    }
+
+    document.addEventListener('mousemove', onMove as any)
+    document.addEventListener('mouseup', onUp)
+    document.addEventListener('touchmove', onMove as any, { passive: false } as any)
+    document.addEventListener('touchend', onUp)
+
+    // perform initial move to align to current pointer
+    move(clientY)
+
+    // keep cleanup ref (not strictly necessary but helpful)
+    dragCleanupRef.current = onUp
+  }
+
+  const handleThumbMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onThumbPointerDown(e.clientY)
+  }
+
+  const handleThumbTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault()
+    onThumbPointerDown(e.touches[0].clientY)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -254,8 +311,11 @@ export default function IdentityDashboard() {
               {/* custom scrollbar thumb (positioned overlay) */}
               <div
                 aria-hidden
+                ref={thumbRef}
+                onMouseDown={handleThumbMouseDown}
+                onTouchStart={handleThumbTouchStart}
                 className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
-                style={{ height: `${thumbHeight}px`, transform: `translateY(${thumbTop}px)`, opacity: thumbVisible ? 1 : 0 }}
+                style={{ height: `${thumbHeight}px`, transform: `translateY(${thumbTop}px)`, opacity: thumbVisible ? 1 : 0, cursor: thumbVisible ? 'grab' : 'default' }}
               />
             </div>
         </div>
@@ -365,46 +425,17 @@ export default function IdentityDashboard() {
 
   <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
         <CardHeader>
-          <div className="w-full flex items-start justify-between">
-            <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> High Risk Score</CardTitle>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setFilter('humans')}
-                className={`px-2 py-1 text-sm rounded ${filter === 'humans' ? 'bg-slate-700' : 'bg-transparent'}`}
-              >
-                Human
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilter('nonhumans')}
-                className={`px-2 py-1 text-sm rounded ${filter === 'nonhumans' ? 'bg-slate-700' : 'bg-transparent'}`}
-              >
-                Non-human
-              </button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> High Risk Score</CardTitle>
         </CardHeader>
         <CardContent>
-          {filter === 'humans' ? (
-            <div>
-              <h4 className="text-sm text-white/80 mb-2">Top human identities</h4>
-              <ol className="list-decimal pl-5 text-sm text-white/80">
-                {data.topHumans.slice(0,5).map(u => (
-                  <li key={u.name} className="py-1 flex justify-between"><span>{u.name}</span><span className="text-xs text-white/70">score {u.score}</span></li>
-                ))}
-              </ol>
-            </div>
-          ) : (
-            <div>
-              <h4 className="text-sm text-white/80 mb-2">Top non-human identities</h4>
-              <ol className="list-decimal pl-5 text-sm text-white/80">
-                {data.topNonHumans.slice(0,5).map(u => (
-                  <li key={u.name} className="py-1 flex justify-between"><span>{u.name}</span><span className="text-xs text-white/70">score {u.score}</span></li>
-                ))}
-              </ol>
-            </div>
-          )}
+          <div>
+            <h4 className="text-sm text-white/80 mb-2">Top human identities</h4>
+            <ol className="list-decimal pl-5 text-sm text-white/80">
+              {data.topHumans.slice(0,5).map(u => (
+                <li key={u.name} className="py-1 flex justify-between"><span>{u.name}</span><span className="text-xs text-white/70">score {u.score}</span></li>
+              ))}
+            </ol>
+          </div>
         </CardContent>
       </Card>
 

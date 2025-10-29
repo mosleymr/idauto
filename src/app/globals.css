@@ -88,6 +88,8 @@ html, body { height: 100%; }
   background: #94a3b8; /* neutral gray */
   border-radius: 9999px;
   width: 8px;
-  pointer-events: none; /* don't block clicks */
+  pointer-events: auto; /* allow dragging */
   transition: background-color 120ms ease, opacity 120ms ease;
+  cursor: grab;
 }
+.admin-scroll-thumb:active { cursor: grabbing; }
