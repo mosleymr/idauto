@@ -75,3 +75,19 @@ html, body { height: 100%; }
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
+/* New custom overlay scrollbar pieces for admin list */
+.admin-scroll-wrapper { position: relative; }
+.admin-scroll-content {
+  /* hide native scrollbar so we can render our own overlay thumb */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.admin-scroll-content::-webkit-scrollbar { width: 0; height: 0; }
+.admin-scroll-thumb {
+  background: #94a3b8; /* neutral gray */
+  border-radius: 9999px;
+  width: 8px;
+  pointer-events: none; /* don't block clicks */
+  transition: background-color 120ms ease, opacity 120ms ease;
+}

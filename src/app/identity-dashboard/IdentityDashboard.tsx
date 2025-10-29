@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, Sector, CartesianGrid } from "recharts"
 import { Users, Cpu, Shield } from "lucide-react"
@@ -17,6 +17,10 @@ export default function IdentityDashboard() {
   const [selectedAdminGroup, setSelectedAdminGroup] = useState<string | null>(null)
   const [selectedAdminMembers, setSelectedAdminMembers] = useState<string[]>([])
   const [selectedAdminMemberObjects, setSelectedAdminMemberObjects] = useState<any[]>([])
+  const adminScrollRef = useRef<HTMLDivElement | null>(null)
+  const [thumbTop, setThumbTop] = useState(0)
+  const [thumbHeight, setThumbHeight] = useState(0)
+  const [thumbVisible, setThumbVisible] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -61,6 +65,38 @@ export default function IdentityDashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admins])
+
+  // Sync custom scrollbar thumb with scroll position/size (must be before any early returns)
+  useEffect(() => {
+    const el = adminScrollRef.current
+    if (!el) return
+
+    const update = () => {
+      const { scrollHeight, clientHeight, scrollTop } = el
+      if (scrollHeight <= clientHeight) {
+        setThumbVisible(false)
+        return
+      }
+      const ratio = clientHeight / scrollHeight
+      const height = Math.max(20, Math.floor(clientHeight * ratio))
+      const top = Math.round((scrollTop / (scrollHeight - clientHeight)) * (clientHeight - height))
+      setThumbHeight(height)
+      setThumbTop(top)
+      setThumbVisible(true)
+    }
+
+    update()
+    el.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      ro.disconnect()
+    }
+  }, [adminScrollRef, admins, selectedAdminGroup, selectedAdminMemberObjects])
 
   if (loading) return <div className="p-6">Loading identity data…</div>
 
@@ -130,6 +166,8 @@ export default function IdentityDashboard() {
 
   
 
+  
+
   // Prepare admin card content to keep JSX simpler
   let adminContent: any = null
   if (adminsLoading) {
@@ -188,8 +226,9 @@ export default function IdentityDashboard() {
             <div className="mt-2 text-sm text-white/70">Selected group: <span className="font-medium text-white">{selectedAdminGroup || '—'}</span></div>
           </div>
 
-          <div className="flex flex-col overflow-y-auto admin-scroll max-h-[200px]">
-            <table className="table-auto w-full text-xs leading-tight">
+          <div className="flex flex-col max-h-[200px] relative admin-scroll-wrapper">
+            <div ref={adminScrollRef} className="overflow-y-auto admin-scroll-content admin-scroll max-h-[200px]">
+              <table className="table-auto w-full text-xs leading-tight">
               <thead>
                 <tr className="text-left text-white/80">
                   <th className="pb-1">Username</th>
@@ -211,7 +250,14 @@ export default function IdentityDashboard() {
                   })()}
               </tbody>
             </table>
-          </div>
+              </div>
+              {/* custom scrollbar thumb (positioned overlay) */}
+              <div
+                aria-hidden
+                className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
+                style={{ height: `${thumbHeight}px`, transform: `translateY(${thumbTop}px)`, opacity: thumbVisible ? 1 : 0 }}
+              />
+            </div>
         </div>
       </>
     )
@@ -232,7 +278,7 @@ export default function IdentityDashboard() {
       {/* Administrators by group (new) */}
   <Card className="bg-slate-900 border-slate-800 text-white col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> Administrators</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> Privileged Users</CardTitle>
           </CardHeader>
         <CardContent>
           {adminContent}
