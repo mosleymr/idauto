@@ -25,6 +25,11 @@ export default function IdentityDashboard() {
   const draggingRef = useRef(false)
   const dragCleanupRef = useRef<() => void | null>(null)
 
+  // Risk users from external REST endpoint (moved here so hooks run unconditionally)
+  const [riskUsers, setRiskUsers] = useState<any[]>([])
+  const [riskLoading, setRiskLoading] = useState(true)
+  const [selectedRiskUserId, setSelectedRiskUserId] = useState<string | null>(null)
+
   const onThumbPointerDown = (clientY: number) => {
     const el = adminScrollRef.current
     if (!el) return
@@ -155,6 +160,29 @@ export default function IdentityDashboard() {
     }
   }, [adminScrollRef, admins, selectedAdminGroup, selectedAdminMemberObjects])
 
+  // Fetch risk users for High Risk Score card
+  useEffect(() => {
+    let mounted = true
+    setRiskLoading(true)
+  fetch('/api/risk')
+      .then(r => r.json())
+      .then(json => {
+        if (!mounted) return
+        const usersRaw = (json && json.users) ? json.users : []
+        const users = usersRaw.map((u: any) => {
+          const riskScoreNum = Number(u.riskScore) || 0
+          const riskId = u.idautoid || u.id || u.username || u.email || String(Math.random())
+          return { ...u, riskScoreNum, riskId }
+        })
+        users.sort((a: any, b: any) => b.riskScoreNum - a.riskScoreNum)
+        setRiskUsers(users)
+        if (users.length > 0) setSelectedRiskUserId(users[0].riskId)
+      })
+      .catch(() => { if (mounted) setRiskUsers([]) })
+      .finally(() => { if (mounted) setRiskLoading(false) })
+    return () => { mounted = false }
+  }, [])
+
   if (loading) return <div className="p-6">Loading identity data…</div>
 
   if (!data) return <div className="p-6">Error loading data</div>
@@ -220,11 +248,8 @@ export default function IdentityDashboard() {
     // If it's unexpectedly large (e.g. 8800), assume it was scaled by 100 and divide.
     return `${Math.round(n / 100)}%`
   }
-
   
-
   
-
   // Prepare admin card content to keep JSX simpler
   let adminContent: any = null
   if (adminsLoading) {
@@ -428,13 +453,50 @@ export default function IdentityDashboard() {
           <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> High Risk Score</CardTitle>
         </CardHeader>
         <CardContent>
-          <div>
-            <h4 className="text-sm text-white/80 mb-2">Top human identities</h4>
-            <ol className="list-decimal pl-5 text-sm text-white/80">
-              {data.topHumans.slice(0,5).map(u => (
-                <li key={u.name} className="py-1 flex justify-between"><span>{u.name}</span><span className="text-xs text-white/70">score {u.score}</span></li>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border-r border-white/5 pr-3">
+              <h4 className="text-sm text-white/80 mb-2">Top risky users</h4>
+              {riskLoading ? (
+                <div className="text-sm text-white/70">Loading…</div>
+              ) : ( (riskUsers || []).length === 0 ? (
+                <div className="text-sm text-white/70">No risk data available</div>
+              ) : (
+                <ul className="text-sm text-white/80">
+                  {(riskUsers || []).slice(0,5).map((u: any) => (
+                    <li key={u.riskId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRiskUserId(u.riskId)}
+                        className={`w-full text-left py-2 px-1 rounded ${selectedRiskUserId === u.riskId ? 'bg-slate-800' : 'hover:bg-slate-850'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{u.username || u.email || u.name || 'unknown'}</span>
+                          <span className="text-xs text-white/70">{u.riskScore ?? u.riskScoreNum}</span>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               ))}
-            </ol>
+            </div>
+            <div className="pl-3">
+              <h4 className="text-sm text-white/80 mb-2">Details</h4>
+              {selectedRiskUserId ? (
+                (() => {
+                  const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
+                  if (!u) return <div className="text-sm text-white/70">No user selected</div>
+                  return (
+                    <div className="text-sm text-white/80">
+                      <div className="mb-2"><span className="text-white/70">Username: </span><span className="font-medium">{u.username || u.email || u.name}</span></div>
+                      <div className="mb-2"><span className="text-white/70">Risk score: </span><span className="font-medium">{u.riskScore ?? u.riskScoreNum}</span></div>
+                      <div className="whitespace-pre-wrap text-xs text-white/70">{u.riskDetail || u.notes || 'No additional details'}</div>
+                    </div>
+                  )
+                })()
+              ) : (
+                <div className="text-sm text-white/70">Select a user to view details</div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
