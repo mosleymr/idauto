@@ -382,22 +382,7 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="col-span-2 bg-slate-900 border-slate-800 text-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Shield className="text-emerald-400"/> MFA adoption rate</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={mfaData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.03)" />
-                <XAxis dataKey="week" />
-                <YAxis tickFormatter={(v: any) => formatPercent(v)} domain={mfaYAxisDomain} />
-                <Tooltip formatter={(value: any) => formatPercent(value)} labelFormatter={(label: any) => `Week: ${label}`} />
-                <Line type="monotone" dataKey="rate" stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* MFA adoption card removed per request */}
     
 
       
