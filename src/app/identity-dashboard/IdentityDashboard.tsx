@@ -141,9 +141,9 @@ export default function IdentityDashboard() {
     adminContent = (
       <>
         <div className="grid grid-cols-2 gap-4 items-stretch">
-          <div className="flex items-center justify-center">
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+          <div className="flex flex-col items-center justify-center">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
                 {adminPieData && adminPieData.length > 0 ? (
                   <>
                     <Pie
@@ -151,7 +151,6 @@ export default function IdentityDashboard() {
                       dataKey="value"
                       nameKey="name"
                       cx="50%"
-                      cy="50%"
                       innerRadius={50}
                       outerRadius={80}
                       paddingAngle={4}
@@ -186,6 +185,7 @@ export default function IdentityDashboard() {
                 ) : null}
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-2 text-sm text-white/70">Selected group: <span className="font-medium text-white">{selectedAdminGroup || '—'}</span></div>
           </div>
 
           <div className="flex flex-col overflow-y-auto admin-scroll max-h-[200px]">
@@ -232,7 +232,7 @@ export default function IdentityDashboard() {
       {/* Administrators by group (new) */}
   <Card className="bg-slate-900 border-slate-800 text-white col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">Administrators</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> Administrators</CardTitle>
           </CardHeader>
         <CardContent>
           {adminContent}
