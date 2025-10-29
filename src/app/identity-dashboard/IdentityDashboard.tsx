@@ -8,20 +8,15 @@ import { Users, Cpu, Shield } from "lucide-react"
 import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
 
-  // Local types for admin/system groups to avoid `any` and satisfy ESLint
-  type AdminMember = { username?: string; mail?: string }
-  type AdminGroup = { name: string; members?: AdminMember[] }
-  type AdminsResponse = { groups?: AdminGroup[] }
-
 export default function IdentityDashboard() {
   const [data, setData] = useState<IdentityData | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'humans' | 'nonhumans'>('humans')
-  const [admins, setAdmins] = useState<AdminsResponse | null>(null)
+  const [admins, setAdmins] = useState<any | null>(null)
   const [adminsLoading, setAdminsLoading] = useState(true)
   const [selectedAdminGroup, setSelectedAdminGroup] = useState<string | null>(null)
   const [selectedAdminMembers, setSelectedAdminMembers] = useState<string[]>([])
-  const [selectedAdminMemberObjects, setSelectedAdminMemberObjects] = useState<AdminMember[]>([])
+  const [selectedAdminMemberObjects, setSelectedAdminMemberObjects] = useState<any[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -41,7 +36,7 @@ export default function IdentityDashboard() {
     let mounted = true
     fetch('/api/systemadmins')
       .then(r => r.json())
-      .then((json: AdminsResponse) => {
+      .then(json => {
         if (mounted) setAdmins(json)
       })
       .catch(() => setAdmins(null))
@@ -53,15 +48,15 @@ export default function IdentityDashboard() {
   useEffect(() => {
     if ((!selectedAdminGroup || selectedAdminGroup === null) && admins && admins.groups && admins.groups.length > 0) {
       const groups = (admins.groups || [])
-        .map((g: AdminGroup) => ({ name: g.name, members: (g.members || []).filter((m: AdminMember) => m && (m.username || m.mail)) }))
-        .filter((g) => (g.members || []).length > 0)
-        .sort((a, b) => (b.members || []).length - (a.members || []).length)
+        .map((g: any) => ({ name: g.name, members: (g.members || []).filter((m: any) => m && (m.username || m.mail)) }))
+        .filter((g: any) => g.members.length > 0)
+        .sort((a: any, b: any) => b.members.length - a.members.length)
       if (groups.length > 0) {
-  const first = groups[0]
-  setSelectedAdminGroup(first.name)
-  setSelectedAdminMemberObjects(first.members || [])
-  const members = (first.members || []).flatMap((m: AdminMember) => [m.mail, m.username]).filter((s): s is string => Boolean(s)).map((s) => s.toLowerCase())
-  setSelectedAdminMembers(members)
+        const first = groups[0]
+        setSelectedAdminGroup(first.name)
+        setSelectedAdminMemberObjects(first.members || [])
+        const members = (first.members || []).flatMap((m: any) => [m.mail, m.username]).filter(Boolean).map((s: string) => s.toLowerCase())
+        setSelectedAdminMembers(members)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,12 +87,12 @@ export default function IdentityDashboard() {
 
   // Prepare admin groups pie data (drop zeros, sort largest-first)
   const adminGroupsProcessed = (admins && admins.groups) ? (admins.groups || [])
-    .map((g: AdminGroup) => {
-      const members = (g.members || []).filter((m: AdminMember) => m && (m.username || m.mail))
+    .map((g: any) => {
+      const members = (g.members || []).filter((m: any) => m && (m.username || m.mail))
       return { name: g.name, value: members.length, members }
     })
-    .filter((g) => g.value > 0)
-    .sort((a, b) => b.value - a.value) : []
+    .filter((g: any) => g.value > 0)
+    .sort((a: any, b: any) => b.value - a.value) : []
 
   const adminPieData = adminGroupsProcessed
   const adminColors = ['#60a5fa', '#a78bfa', '#f97316', '#34d399', '#fca5a5', '#f59e0b', '#38bdf8', '#7c3aed']
@@ -165,19 +160,18 @@ export default function IdentityDashboard() {
                       animationEasing="ease-in-out"
                       label={false}
                       labelLine={false}
-                      onClick={(entry: unknown) => {
-                        const payload = (entry && typeof entry === 'object' && 'payload' in entry) ? (entry as Record<string, unknown>)['payload'] : entry
-                        const group = payload as AdminGroup
-                        if (group && group.name) {
-                          setSelectedAdminGroup(group.name)
-                          const memberObjs = (group.members || [])
+                      onClick={(entry: any) => {
+                        const payload = entry && entry.payload ? entry.payload : entry
+                        if (payload && payload.name) {
+                          setSelectedAdminGroup(payload.name)
+                          const memberObjs = (payload.members || [])
                           setSelectedAdminMemberObjects(memberObjs)
-                          const members = memberObjs.flatMap((m: AdminMember) => [m.mail, m.username]).filter((s): s is string => Boolean(s)).map((s) => s.toLowerCase())
+                          const members = memberObjs.flatMap((m: any) => [m.mail, m.username]).filter(Boolean).map((s: string) => s.toLowerCase())
                           setSelectedAdminMembers(members)
                         }
                       }}
                     >
-                      {adminPieData.map((slice: { name: string; value: number; members: AdminMember[] }, i: number) => (
+                      {adminPieData.map((slice: any, i: number) => (
                         <Cell
                           key={`admin-cell-${i}`}
                           fill={adminColors[i % adminColors.length]}
@@ -365,6 +359,26 @@ export default function IdentityDashboard() {
               </ol>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Shield className="text-red-400" /> PhishID Protection</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div className="flex flex-col items-start">
+              <h4 className="text-base text-white">Phishing Detections</h4>
+              <p className="text-2xl font-bold text-red-400">134</p>
+              <p className="text-white/70">Past 30 days</p>
+            </div>
+            <div className="flex flex-col items-start">
+              <h4 className="text-base text-white">Blocked Attempts</h4>
+              <p className="text-2xl font-bold text-green-400">129</p>
+              <p className="text-white/70">Prevented by PhishID</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
