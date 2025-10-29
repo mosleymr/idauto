@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, Sector, CartesianGrid } from "recharts"
-import { Users, Cpu, Shield } from "lucide-react"
+import { Users, Cpu, Shield, Lock } from "lucide-react"
 import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
 
@@ -460,6 +460,33 @@ export default function IdentityDashboard() {
       </Card>
 
       {/* MFA adoption card removed per request */}
+    
+      <Card className="bg-slate-900 border-slate-800 text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Lock className="text-purple-400"/> Multi-Factor Authentication</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-lg text-white">MFA Enrollment</h3>
+              <p className="text-4xl font-bold text-green-400">88%</p>
+              <p className="text-white/70">Organization-wide</p>
+            </div>
+            <div>
+              <h3 className="text-lg text-white">Failed MFA Attempts</h3>
+              <p className="text-4xl font-bold text-yellow-400">27</p>
+              <p className="text-white/70">Past 24 hours</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={[{type:'MFA Success',val:520},{type:'MFA Failures',val:27}]}> 
+              <Bar dataKey="val" fill="#818cf8" radius={[4,4,0,0]}/>
+              <XAxis dataKey="type"/>
+              <Tooltip />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     
 
       
