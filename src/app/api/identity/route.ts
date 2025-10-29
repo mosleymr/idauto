@@ -30,9 +30,49 @@ const sampleData = {
   privileged: { globalAdmins: 4, delegatedAdmins: 12 },
 }
 
-export function GET() {
+export async function GET() {
+  // Attempt to proxy the external REST endpoint using server-side fetch and HTTP Basic Auth.
+  // Credentials should be provided via environment variables for security.
+  const RAPID_USER = process.env.RAPID_USER
+  const RAPID_PASS = process.env.RAPID_PASS
+  const externalUrl = 'https://portal.rapidisd.org/api/rest/restpoints/dashboards/'
+
+  if (RAPID_USER && RAPID_PASS) {
+    try {
+      const auth = Buffer.from(`${RAPID_USER}:${RAPID_PASS}`).toString('base64')
+      // Server-side fetch
+      const r = await fetch(externalUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Accept': 'application/json',
+        },
+        // ensure we don't expose credentials to the client
+        cache: 'no-store',
+      })
+
+      if (!r.ok) {
+        console.error('External identity API returned', r.status, r.statusText)
+        const res = NextResponse.json(sampleData as IdentityData)
+        res.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
+        return res
+      }
+
+      const json = await r.json()
+      const res = NextResponse.json(json as IdentityData)
+      // Cache on CDN for 60s, allow stale while revalidating for 120s
+      res.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
+      return res
+    } catch (err) {
+      console.error('Error fetching external identity API', err)
+      const res = NextResponse.json(sampleData as IdentityData)
+      res.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
+      return res
+    }
+  }
+
+  // Fallback: return the bundled sample data when credentials are not configured
   const res = NextResponse.json(sampleData as IdentityData)
-  // Cache on CDN for 60s, allow stale while revalidating for 120s
   res.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
   return res
 }

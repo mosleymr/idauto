@@ -5,7 +5,7 @@ import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, Tooltip, Responsi
 import { Shield, Lock, Users, AlertTriangle, Activity, Key, Cloud, Mail, Share2 } from "lucide-react"
 import { motion } from "framer-motion"
 import Image from 'next/image'
-import logo from '@/app/idauto_light.png'
+ 
 
 export default function GoogleWorkspaceIdentityDashboard() {
   return (
@@ -16,7 +16,7 @@ export default function GoogleWorkspaceIdentityDashboard() {
           <p className="text-slate-400">Identity and Access Management Dashboard for CISOs</p>
         </div>
         <div className="ml-4">
-          <Image src={logo} alt="idauto logo" width={40} height={40} className="h-10 w-auto" />
+          <Image src="/idauto_light.png" alt="idauto logo" width={60} height={60} className="h-[60px] w-auto" />
         </div>
       </motion.div>
 
