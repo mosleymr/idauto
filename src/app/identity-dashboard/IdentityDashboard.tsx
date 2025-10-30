@@ -25,6 +25,15 @@ export default function IdentityDashboard() {
   const draggingRef = useRef(false)
   const dragCleanupRef = useRef<() => void | null>(null)
 
+  // Risk details scroll/thumb (separate from admins)
+  const riskScrollRef = useRef<HTMLDivElement | null>(null)
+  const [riskThumbTop, setRiskThumbTop] = useState(0)
+  const [riskThumbHeight, setRiskThumbHeight] = useState(0)
+  const [riskThumbVisible, setRiskThumbVisible] = useState(false)
+  const riskThumbRef = useRef<HTMLDivElement | null>(null)
+  const riskDraggingRef = useRef(false)
+  const riskDragCleanupRef = useRef<() => void | null>(null)
+
   // Risk users from external REST endpoint (moved here so hooks run unconditionally)
   const [riskUsers, setRiskUsers] = useState<any[]>([])
   const [riskLoading, setRiskLoading] = useState(true)
@@ -82,6 +91,57 @@ export default function IdentityDashboard() {
   const handleThumbTouchStart = (e: React.TouchEvent) => {
     e.preventDefault()
     onThumbPointerDown(e.touches[0].clientY)
+  }
+
+  const onRiskThumbPointerDown = (clientY: number) => {
+    const el = riskScrollRef.current
+    if (!el) return
+    riskDraggingRef.current = true
+    document.body.style.userSelect = 'none'
+
+    const wrapperRect = el.getBoundingClientRect()
+    const clientHeight = el.clientHeight
+    const scrollHeight = el.scrollHeight
+    const maxTop = Math.max(0, clientHeight - riskThumbHeight)
+
+    const move = (pageY: number) => {
+      const y = pageY - wrapperRect.top
+      const clamped = Math.max(0, Math.min(y, maxTop))
+      const newScrollTop = (clamped / (maxTop || 1)) * (scrollHeight - clientHeight)
+      el.scrollTop = newScrollTop
+    }
+
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const pageY = (e as TouchEvent).touches ? (e as TouchEvent).touches[0].clientY : (e as MouseEvent).clientY
+      move(pageY)
+    }
+
+    const onUp = () => {
+      riskDraggingRef.current = false
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', onMove as any)
+      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('touchmove', onMove as any)
+      document.removeEventListener('touchend', onUp)
+    }
+
+    document.addEventListener('mousemove', onMove as any)
+    document.addEventListener('mouseup', onUp)
+    document.addEventListener('touchmove', onMove as any, { passive: false } as any)
+    document.addEventListener('touchend', onUp)
+
+    move(clientY)
+    riskDragCleanupRef.current = onUp
+  }
+
+  const handleRiskThumbMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    onRiskThumbPointerDown(e.clientY)
+  }
+
+  const handleRiskThumbTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault()
+    onRiskThumbPointerDown(e.touches[0].clientY)
   }
 
   useEffect(() => {
@@ -159,6 +219,38 @@ export default function IdentityDashboard() {
       ro.disconnect()
     }
   }, [adminScrollRef, admins, selectedAdminGroup, selectedAdminMemberObjects])
+
+  // Sync custom scrollbar thumb for risk details
+  useEffect(() => {
+    const el = riskScrollRef.current
+    if (!el) return
+
+    const update = () => {
+      const { scrollHeight, clientHeight, scrollTop } = el
+      if (scrollHeight <= clientHeight) {
+        setRiskThumbVisible(false)
+        return
+      }
+      const ratio = clientHeight / scrollHeight
+      const height = Math.max(20, Math.floor(clientHeight * ratio))
+      const top = Math.round((scrollTop / (scrollHeight - clientHeight)) * (clientHeight - height))
+      setRiskThumbHeight(height)
+      setRiskThumbTop(top)
+      setRiskThumbVisible(true)
+    }
+
+    update()
+    el.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      ro.disconnect()
+    }
+  }, [riskScrollRef, selectedRiskUserId, riskUsers])
 
   // Fetch risk users for High Risk Score card
   useEffect(() => {
@@ -455,7 +547,7 @@ export default function IdentityDashboard() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div className="border-r border-white/5 pr-3">
-              <h4 className="text-sm text-white/80 mb-2">Top risky users</h4>
+              <h4 className="text-sm text-white/80 mb-2">Identity</h4>
               {riskLoading ? (
                 <div className="text-sm text-white/70">Loading…</div>
               ) : ( (riskUsers || []).length === 0 ? (
@@ -469,7 +561,7 @@ export default function IdentityDashboard() {
                         onClick={() => setSelectedRiskUserId(u.riskId)}
                         className={`w-full text-left py-2 px-1 rounded ${selectedRiskUserId === u.riskId ? 'bg-slate-800' : 'hover:bg-slate-850'}`}
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-1">
                           <span className="font-medium">{u.username || u.email || u.name || 'unknown'}</span>
                           <span className="text-xs text-white/70">{u.riskScore ?? u.riskScoreNum}</span>
                         </div>
@@ -481,21 +573,33 @@ export default function IdentityDashboard() {
             </div>
             <div className="pl-3">
               <h4 className="text-sm text-white/80 mb-2">Details</h4>
-              {selectedRiskUserId ? (
-                (() => {
-                  const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
-                  if (!u) return <div className="text-sm text-white/70">No user selected</div>
-                  return (
-                    <div className="text-sm text-white/80">
-                      <div className="mb-2"><span className="text-white/70">Username: </span><span className="font-medium">{u.username || u.email || u.name}</span></div>
-                      <div className="mb-2"><span className="text-white/70">Risk score: </span><span className="font-medium">{u.riskScore ?? u.riskScoreNum}</span></div>
-                      <div className="whitespace-pre-wrap text-xs text-white/70">{u.riskDetail || u.notes || 'No additional details'}</div>
-                    </div>
-                  )
-                })()
-              ) : (
-                <div className="text-sm text-white/70">Select a user to view details</div>
-              )}
+              <div className="admin-scroll-wrapper relative">
+                <div ref={riskScrollRef} className="admin-scroll-content max-h-64 overflow-y-auto pr-2">
+                  {selectedRiskUserId ? (
+                    (() => {
+                      const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
+                      if (!u) return <div className="text-sm text-white/70">No user selected</div>
+                      return (
+                        <div className="text-sm text-white/80">
+                          <div className="mb-2"><span className="text-white/70">Username: </span><span className="font-medium">{u.username || u.email || u.name}</span></div>
+                          <div className="mb-2"><span className="text-white/70">Risk score: </span><span className="font-medium">{u.riskScore ?? u.riskScoreNum}</span></div>
+                          <div className="whitespace-pre-wrap text-xs text-white/70">{u.riskDetail || u.notes || 'No additional details'}</div>
+                        </div>
+                      )
+                    })()
+                  ) : (
+                    <div className="text-sm text-white/70">Select a user to view details</div>
+                  )}
+                </div>
+                <div
+                  aria-hidden
+                  ref={riskThumbRef}
+                  onMouseDown={handleRiskThumbMouseDown}
+                  onTouchStart={handleRiskThumbTouchStart}
+                  className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
+                  style={{ height: `${riskThumbHeight}px`, transform: `translateY(${riskThumbTop}px)`, opacity: riskThumbVisible ? 1 : 0, cursor: riskThumbVisible ? 'grab' : 'default' }}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
