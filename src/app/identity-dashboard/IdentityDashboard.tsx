@@ -528,6 +528,77 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
+      {/* Investigations: summary metrics + lists (new) */}
+      <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-amber-400"/> Investigations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const summary = { openAlerts: 42, usersWithAlerts: 18, investigations: 9 }
+            const investigations = [
+              { id: 'inv-1', username: 'alice@example.com', type: 'high_risk_user' },
+              { id: 'inv-2', username: 'bob@example.com', type: 'high_risk_user' },
+              { id: 'inv-3', username: 'carol@example.com', type: 'high_risk_user' },
+            ]
+            const usersWithOpenAlerts = [
+              { id: 'u-1', username: 'dave@example.com', alerts: 3 },
+              { id: 'u-2', username: 'eve@example.com', alerts: 2 },
+              { id: 'u-3', username: 'mallory@example.com', alerts: 1 },
+            ]
+            return (
+              <>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-slate-800 p-3 rounded">
+                    <div className="text-sm text-white/70">Open alerts</div>
+                    <div className="text-2xl font-bold text-red-400">{summary.openAlerts}</div>
+                  </div>
+                  <div className="bg-slate-800 p-3 rounded">
+                    <div className="text-sm text-white/70">Users with alerts</div>
+                    <div className="text-2xl font-bold text-yellow-400">{summary.usersWithAlerts}</div>
+                  </div>
+                  <div className="bg-slate-800 p-3 rounded">
+                    <div className="text-sm text-white/70">Current investigations</div>
+                    <div className="text-2xl font-bold text-green-400">{summary.investigations}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm text-white/80 mb-2">Current investigations</h4>
+                    <ul className="space-y-2 text-sm text-white/80">
+                      {investigations.map((i) => (
+                        <li key={i.id} className="p-2 bg-slate-850 rounded flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{i.username}</div>
+                            <div className="text-xs text-white/70">Type: {i.type}</div>
+                          </div>
+                          <div className="text-xs text-white/70">ID: {i.id}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-sm text-white/80 mb-2">Users with open alerts</h4>
+                    <ul className="space-y-2 text-sm text-white/80">
+                      {usersWithOpenAlerts.map((u) => (
+                        <li key={u.id} className="p-2 bg-slate-850 rounded flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{u.username}</div>
+                            <div className="text-xs text-white/70">Open alerts: {u.alerts}</div>
+                          </div>
+                          <div className="text-xs text-white/70">Profile</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </>
+            )
+          })()}
+        </CardContent>
+      </Card>
+
       {/* Trends & Anomalies remains a full row; the smaller summary cards are moved below it */}
       <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
         <CardHeader>
