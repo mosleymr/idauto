@@ -573,8 +573,8 @@ export default function IdentityDashboard() {
             </div>
             <div className="pl-3">
               <h4 className="text-sm text-white/80 mb-2">Details</h4>
-              <div className="admin-scroll-wrapper relative">
-                <div ref={riskScrollRef} className="admin-scroll-content max-h-64 overflow-y-auto pr-2">
+              <div className="admin-scroll-wrapper relative h-56 overflow-hidden pr-6">
+                <div ref={riskScrollRef} className="admin-scroll-content h-full overflow-y-auto pr-0">
                   {selectedRiskUserId ? (
                     (() => {
                       const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
@@ -597,7 +597,7 @@ export default function IdentityDashboard() {
                   onMouseDown={handleRiskThumbMouseDown}
                   onTouchStart={handleRiskThumbTouchStart}
                   className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
-                  style={{ height: `${riskThumbHeight}px`, transform: `translateY(${riskThumbTop}px)`, opacity: riskThumbVisible ? 1 : 0, cursor: riskThumbVisible ? 'grab' : 'default' }}
+                  style={{ height: `${riskThumbHeight}px`, top: `${riskThumbTop}px`, opacity: riskThumbVisible ? 1 : 0, cursor: riskThumbVisible ? 'grab' : 'default' }}
                 />
               </div>
             </div>
