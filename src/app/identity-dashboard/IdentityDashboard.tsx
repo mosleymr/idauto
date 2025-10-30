@@ -3,8 +3,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, Sector, CartesianGrid, AreaChart, Area } from "recharts"
-import { Users, Cpu, Shield, Lock, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react"
+import { LineChart, Line, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, AreaChart, Area } from "recharts"
+import { Shield, Lock, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react"
 import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
 
@@ -15,7 +15,7 @@ export default function IdentityDashboard() {
   const [admins, setAdmins] = useState<any | null>(null)
   const [adminsLoading, setAdminsLoading] = useState(true)
   const [selectedAdminGroup, setSelectedAdminGroup] = useState<string | null>(null)
-  const [selectedAdminMembers, setSelectedAdminMembers] = useState<string[]>([])
+  // selectedAdminMembers state removed (not used currently)
   const [selectedAdminMemberObjects, setSelectedAdminMemberObjects] = useState<any[]>([])
   const adminScrollRef = useRef<HTMLDivElement | null>(null)
   const [thumbTop, setThumbTop] = useState(0)
@@ -181,8 +181,7 @@ export default function IdentityDashboard() {
         const first = groups[0]
         setSelectedAdminGroup(first.name)
         setSelectedAdminMemberObjects(first.members || [])
-        const members = (first.members || []).flatMap((m: any) => [m.mail, m.username]).filter(Boolean).map((s: string) => s.toLowerCase())
-        setSelectedAdminMembers(members)
+          // members list prepared but not stored separately (filtering currently unused)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -279,24 +278,8 @@ export default function IdentityDashboard() {
 
   if (!data) return <div className="p-6">Error loading data</div>
 
-  // If an admin group is selected, compute filtered anomalous lists
-  const filteredTopHumans = (selectedAdminMembers && selectedAdminMembers.length) ?
-    data.topHumans.filter(u => {
-      const uname = (u.name || '').toLowerCase()
-      return selectedAdminMembers.some(m => {
-        if (!m) return false
-        return m === uname || uname.includes(m)
-      })
-    }) : data.topHumans
-
-  const filteredTopNonHumans = (selectedAdminMembers && selectedAdminMembers.length) ?
-    data.topNonHumans.filter(u => {
-      const uname = (u.name || '').toLowerCase()
-      return selectedAdminMembers.some(m => {
-        if (!m) return false
-        return m === uname || uname.includes(m)
-      })
-    }) : data.topNonHumans
+  // If an admin group is selected, we could compute filtered anomalous lists (not used currently)
+  // (kept logic removed to avoid unused variable lint warnings)
 
   // Prepare admin groups pie data (drop zeros, sort largest-first)
   const adminGroupsProcessed = (admins && admins.groups) ? (admins.groups || [])
@@ -310,36 +293,11 @@ export default function IdentityDashboard() {
   const adminPieData = adminGroupsProcessed
   const adminColors = ['#60a5fa', '#a78bfa', '#f97316', '#34d399', '#fca5a5', '#f59e0b', '#38bdf8', '#7c3aed']
 
-  // MFA sample data: generally increasing with small ups/downs
-  const mfaSample = [
-    { week: '2025-01', rate: 0.40 },
-    { week: '2025-02', rate: 0.42 },
-    { week: '2025-03', rate: 0.46 },
-    { week: '2025-04', rate: 0.44 },
-    { week: '2025-05', rate: 0.50 },
-    { week: '2025-06', rate: 0.53 },
-    { week: '2025-07', rate: 0.56 },
-    { week: '2025-08', rate: 0.60 },
-    { week: '2025-09', rate: 0.62 },
-    { week: '2025-10', rate: 0.67 }
-  ]
-  const mfaData = (data && data.mfaTrend && data.mfaTrend.length) ? data.mfaTrend : mfaSample
+  // MFA sample data removed (not used in current cards)
+      // mfaData intentionally omitted (not used in current cards)
 
   // Determine how MFA values are represented so we can format ticks/tooltips robustly.
-  const mfaMaxRaw = Math.max(...mfaData.map((d: any) => Number(d.rate) || 0))
-  // If values look like fractions (<= ~1.5) we treat them as 0..1. If they look like percentages (<=100) treat as 0..100.
-  const mfaIsFraction = mfaMaxRaw <= 1.5
-  const mfaYAxisDomain = mfaIsFraction ? [0, 1] : [0, Math.max(100, Math.ceil(mfaMaxRaw))]
-
-  const formatPercent = (val: any) => {
-    const n = Number(val)
-    if (Number.isNaN(n)) return String(val)
-    // If fraction (0.x) -> multiply by 100. If value looks like percent (1..100) -> use as-is.
-    if (n <= 1.5) return `${Math.round(n * 100)}%`
-    if (n <= 100) return `${Math.round(n)}%`
-    // If it's unexpectedly large (e.g. 8800), assume it was scaled by 100 and divide.
-    return `${Math.round(n / 100)}%`
-  }
+  // MFA value heuristics were previously used for formatting ticks/tooltips; omitted to avoid unused helpers.
   
   
   // Prepare admin card content to keep JSX simpler
@@ -377,8 +335,7 @@ export default function IdentityDashboard() {
                           setSelectedAdminGroup(payload.name)
                           const memberObjs = (payload.members || [])
                           setSelectedAdminMemberObjects(memberObjs)
-                          const members = memberObjs.flatMap((m: any) => [m.mail, m.username]).filter(Boolean).map((s: string) => s.toLowerCase())
-                          setSelectedAdminMembers(members)
+                          // members computed (not stored)
                         }
                       }}
                     >

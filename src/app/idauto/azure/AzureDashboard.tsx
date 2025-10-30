@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
-import { Shield, Users, Lock, AlertTriangle, Activity, Globe, TrendingUp, Key } from "lucide-react"
+import { Shield, Users, Lock, AlertTriangle, Activity, Globe, TrendingUp } from "lucide-react"
 import { motion } from "framer-motion"
 import Image from 'next/image'
 
