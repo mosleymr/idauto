@@ -3,8 +3,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, Sector, CartesianGrid } from "recharts"
-import { Users, Cpu, Shield, Lock } from "lucide-react"
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, Sector, CartesianGrid, AreaChart, Area } from "recharts"
+import { Users, Cpu, Shield, Lock, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react"
 import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
 
@@ -462,7 +462,144 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-      {/* Identities by type (human / non-human) - combined card */}
+      {/* keep High Risk Score immediately after Privileged Users (moved) */}
+      <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> High Risk Score</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="border-r border-white/5 pr-3">
+              <h4 className="text-sm text-white/80 mb-2">Identity</h4>
+              {riskLoading ? (
+                <div className="text-sm text-white/70">Loading…</div>
+              ) : ( (riskUsers || []).length === 0 ? (
+                <div className="text-sm text-white/70">No risk data available</div>
+              ) : (
+                <ul className="text-sm text-white/80">
+                  {(riskUsers || []).slice(0,5).map((u: any) => (
+                    <li key={u.riskId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRiskUserId(u.riskId)}
+                        className={`w-full text-left py-2 px-1 rounded ${selectedRiskUserId === u.riskId ? 'bg-slate-800' : 'hover:bg-slate-850'}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{u.username || u.email || u.name || 'unknown'}</span>
+                          <span className="text-xs text-white/70">{u.riskScore ?? u.riskScoreNum}</span>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+            <div className="pl-3">
+              <h4 className="text-sm text-white/80 mb-2">Details</h4>
+              <div className="admin-scroll-wrapper relative h-56 overflow-hidden pr-6">
+                <div ref={riskScrollRef} className="admin-scroll-content h-full overflow-y-auto pr-0">
+                  {selectedRiskUserId ? (
+                    (() => {
+                      const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
+                      if (!u) return <div className="text-sm text-white/70">No user selected</div>
+                      return (
+                        <div className="text-sm text-white/80">
+                          <div className="mb-2"><span className="text-white/70">Username: </span><span className="font-medium">{u.username || u.email || u.name}</span></div>
+                          <div className="mb-2"><span className="text-white/70">Risk score: </span><span className="font-medium">{u.riskScore ?? u.riskScoreNum}</span></div>
+                          <div className="whitespace-pre-wrap text-xs text-white/70">{u.riskDetail || u.notes || 'No additional details'}</div>
+                        </div>
+                      )
+                    })()
+                  ) : (
+                    <div className="text-sm text-white/70">Select a user to view details</div>
+                  )}
+                </div>
+                <div
+                  aria-hidden
+                  ref={riskThumbRef}
+                  onMouseDown={handleRiskThumbMouseDown}
+                  onTouchStart={handleRiskThumbTouchStart}
+                  className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
+                  style={{ height: `${riskThumbHeight}px`, top: `${riskThumbTop}px`, opacity: riskThumbVisible ? 1 : 0, cursor: riskThumbVisible ? 'grab' : 'default' }}
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trends & Anomalies remains a full row; the smaller summary cards are moved below it */}
+      <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-cyan-400"/> Trends & Anomalies</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-lg mb-2 text-white">Failed Login Trends (30 Days)</h3>
+              <ResponsiveContainer width="100%" height={120}>
+                <AreaChart data={[{day:'Week 1',val:30},{day:'Week 2',val:55},{day:'Week 3',val:42},{day:'Week 4',val:67}]}> 
+                  <Area type="monotone" dataKey="val" stroke="#06b6d4" fill="#0ea5e9" fillOpacity={0.3}/>
+                  <XAxis dataKey="day"/>
+                  <Tooltip />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <h3 className="text-lg mb-2 text-white">Multi-Factor Authentication</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <p className="text-sm text-white/70">MFA Enrollment</p>
+                  <p className="text-2xl font-bold text-green-400">88%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-white/70">Failed MFA Attempts</p>
+                  <p className="text-2xl font-bold text-yellow-400">27</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg mb-2 text-white">PhishID — Last 7 days</h3>
+              {(() => {
+                const phishData = [
+                  { day: 'Mon', detects: 18 },
+                  { day: 'Tue', detects: 22 },
+                  { day: 'Wed', detects: 30 },
+                  { day: 'Thu', detects: 25 },
+                  { day: 'Fri', detects: 20 },
+                  { day: 'Sat', detects: 16 },
+                  { day: 'Sun', detects: 23 },
+                ]
+                const today = phishData[phishData.length - 1].detects
+                const prev = phishData[phishData.length - 2]?.detects ?? 0
+                const delta = today - prev
+                const TrendIcon = delta >= 0 ? ArrowUp : ArrowDown
+                const trendColor = delta >= 0 ? 'text-red-400' : 'text-green-400'
+                return (
+                  <>
+                    <div className="mb-2 flex items-center gap-3">
+                      <span className="text-sm text-white/70">Blocked Phishing Today:</span>
+                      <span className={`flex items-center gap-2 ml-2 text-2xl font-bold ${trendColor}`}>
+                        <TrendIcon className="w-5 h-5" />
+                        <span>{today}</span>
+                      </span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={phishData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                        <Line type="monotone" dataKey="detects" stroke="#f43f5e" strokeWidth={2} dot={{ r: 2 }} />
+                        <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }} />
+                        <Tooltip />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Identities by type (human / non-human) - moved below Trends */}
       <Card className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <div className="w-full flex items-start justify-between">
@@ -540,71 +677,6 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-  <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> High Risk Score</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border-r border-white/5 pr-3">
-              <h4 className="text-sm text-white/80 mb-2">Identity</h4>
-              {riskLoading ? (
-                <div className="text-sm text-white/70">Loading…</div>
-              ) : ( (riskUsers || []).length === 0 ? (
-                <div className="text-sm text-white/70">No risk data available</div>
-              ) : (
-                <ul className="text-sm text-white/80">
-                  {(riskUsers || []).slice(0,5).map((u: any) => (
-                    <li key={u.riskId}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRiskUserId(u.riskId)}
-                        className={`w-full text-left py-2 px-1 rounded ${selectedRiskUserId === u.riskId ? 'bg-slate-800' : 'hover:bg-slate-850'}`}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">{u.username || u.email || u.name || 'unknown'}</span>
-                          <span className="text-xs text-white/70">{u.riskScore ?? u.riskScoreNum}</span>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ))}
-            </div>
-            <div className="pl-3">
-              <h4 className="text-sm text-white/80 mb-2">Details</h4>
-              <div className="admin-scroll-wrapper relative h-56 overflow-hidden pr-6">
-                <div ref={riskScrollRef} className="admin-scroll-content h-full overflow-y-auto pr-0">
-                  {selectedRiskUserId ? (
-                    (() => {
-                      const u = (riskUsers || []).find((x: any) => x.riskId === selectedRiskUserId)
-                      if (!u) return <div className="text-sm text-white/70">No user selected</div>
-                      return (
-                        <div className="text-sm text-white/80">
-                          <div className="mb-2"><span className="text-white/70">Username: </span><span className="font-medium">{u.username || u.email || u.name}</span></div>
-                          <div className="mb-2"><span className="text-white/70">Risk score: </span><span className="font-medium">{u.riskScore ?? u.riskScoreNum}</span></div>
-                          <div className="whitespace-pre-wrap text-xs text-white/70">{u.riskDetail || u.notes || 'No additional details'}</div>
-                        </div>
-                      )
-                    })()
-                  ) : (
-                    <div className="text-sm text-white/70">Select a user to view details</div>
-                  )}
-                </div>
-                <div
-                  aria-hidden
-                  ref={riskThumbRef}
-                  onMouseDown={handleRiskThumbMouseDown}
-                  onTouchStart={handleRiskThumbTouchStart}
-                  className="absolute right-2 w-2 rounded-full admin-scroll-thumb"
-                  style={{ height: `${riskThumbHeight}px`, top: `${riskThumbTop}px`, opacity: riskThumbVisible ? 1 : 0, cursor: riskThumbVisible ? 'grab' : 'default' }}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Shield className="text-red-400" /> PhishID Protection</CardTitle>
@@ -625,8 +697,6 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-      {/* MFA adoption card removed per request */}
-    
       <Card className="bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Lock className="text-purple-400"/> Multi-Factor Authentication</CardTitle>
@@ -653,9 +723,7 @@ export default function IdentityDashboard() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-    
 
-      
     </div>
   )
 }
