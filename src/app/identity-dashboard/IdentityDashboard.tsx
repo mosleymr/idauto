@@ -17,6 +17,9 @@ export default function IdentityDashboard() {
   const [selectedAdminGroup, setSelectedAdminGroup] = useState<string | null>(null)
   // selectedAdminMembers state removed (not used currently)
   const [selectedAdminMemberObjects, setSelectedAdminMemberObjects] = useState<any[]>([])
+  const [selectedAdminUsername, setSelectedAdminUsername] = useState<string | null>(null)
+  const [adminDetails, setAdminDetails] = useState<any | null>(null)
+  const [adminDetailsLoading, setAdminDetailsLoading] = useState(false)
   const adminScrollRef = useRef<HTMLDivElement | null>(null)
   const [thumbTop, setThumbTop] = useState(0)
   const [thumbHeight, setThumbHeight] = useState(0)
@@ -38,6 +41,35 @@ export default function IdentityDashboard() {
   const [riskUsers, setRiskUsers] = useState<any[]>([])
   const [riskLoading, setRiskLoading] = useState(true)
   const [selectedRiskUserId, setSelectedRiskUserId] = useState<string | null>(null)
+
+  // Fetch admin/user details when an admin username is selected
+  useEffect(() => {
+    let mounted = true
+    if (!selectedAdminUsername) return
+    setAdminDetails(null)
+    setAdminDetailsLoading(true)
+    const fetchDetails = async () => {
+      try {
+        const r = await fetch(`/api/users?username=${encodeURIComponent(selectedAdminUsername)}`)
+        if (!mounted) return
+        if (!r.ok) {
+          setAdminDetails(null)
+        } else {
+          const json = await r.json()
+          // The RAPID endpoint may return an object or list; try to extract the first user record
+          const user = Array.isArray(json) ? (json[0] || null) : (json && (json.users || json.data || json[0]) ? (json.users ? json.users[0] : (json.data ? json.data[0] : json[0])) : json)
+          setAdminDetails(user || json || null)
+        }
+      } catch (err) {
+        console.error('Error fetching admin details', err)
+        if (mounted) setAdminDetails(null)
+      } finally {
+        if (mounted) setAdminDetailsLoading(false)
+      }
+    }
+    fetchDetails()
+    return () => { mounted = false }
+  }, [selectedAdminUsername])
 
   const onThumbPointerDown = (clientY: number) => {
     const el = adminScrollRef.current
@@ -374,7 +406,17 @@ export default function IdentityDashboard() {
                       const key = username || `m-${idx}`
                       return (
                         <tr key={key} className="odd:bg-slate-900 even:bg-slate-950">
-                          <td className="py-1 text-xs">{username || '—'}</td>
+                          <td className="py-1 text-xs">
+                            {username ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedAdminUsername(username)}
+                                className={`text-left w-full text-sm ${selectedAdminUsername === username ? 'underline' : 'hover:underline'}`}
+                              >
+                                {username}
+                              </button>
+                            ) : '—'}
+                          </td>
                         </tr>
                       )
                     })
@@ -416,6 +458,39 @@ export default function IdentityDashboard() {
           </CardHeader>
         <CardContent>
           {adminContent}
+
+          {selectedAdminUsername ? (
+            <div className="mt-4 p-3 bg-slate-850 rounded relative">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium">Details: {selectedAdminUsername}</div>
+                <div>
+                  <button type="button" onClick={() => { setSelectedAdminUsername(null); setAdminDetails(null) }} className="text-xs text-white/60 hover:text-white">Close</button>
+                </div>
+              </div>
+              {adminDetailsLoading ? (
+                <div className="text-sm text-white/70">Loading details…</div>
+              ) : adminDetails ? (
+                <div className="text-sm text-white/80">
+                  {(() => {
+                    const name = adminDetails.name || adminDetails.displayName || adminDetails.username || '—'
+                    const email = adminDetails.email || adminDetails.mail || '—'
+                    const riskScore = adminDetails.riskScore ?? adminDetails.riskScoreNum ?? adminDetails.risk ?? '—'
+                    const riskField = adminDetails.risk ?? adminDetails.risks ?? adminDetails.riskDetail ?? '—'
+                    return (
+                      <>
+                        <div className="mb-1"><span className="text-white/70">Name: </span><span className="font-medium">{name}</span></div>
+                        <div className="mb-1"><span className="text-white/70">Email: </span><span className="font-medium">{email}</span></div>
+                        <div className="mb-1"><span className="text-white/70">Risk score: </span><span className="font-medium">{String(riskScore)}</span></div>
+                        <div className="mb-1"><span className="text-white/70">Risk: </span><span className="font-medium">{typeof riskField === 'string' ? riskField : JSON.stringify(riskField)}</span></div>
+                      </>
+                    )
+                  })()}
+                </div>
+              ) : (
+                <div className="text-sm text-white/70">No details available</div>
+              )}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
