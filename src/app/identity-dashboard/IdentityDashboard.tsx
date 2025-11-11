@@ -3,10 +3,12 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { LineChart, Line, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, AreaChart, Area } from "recharts"
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Legend, Cell, AreaChart, Area } from "recharts"
 import { Shield, Lock, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react"
 import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
+import Modal from '@/components/ui/modal'
+import UserDetails from '@/components/ui/user-details'
 
 export default function IdentityDashboard() {
   const [data, setData] = useState<IdentityData | null>(null)
@@ -20,6 +22,10 @@ export default function IdentityDashboard() {
   const [selectedAdminUsername, setSelectedAdminUsername] = useState<string | null>(null)
   const [adminDetails, setAdminDetails] = useState<any | null>(null)
   const [adminDetailsLoading, setAdminDetailsLoading] = useState(false)
+  // SafeID selected user details (for recent compromised users)
+  const [selectedSafeUsername, setSelectedSafeUsername] = useState<string | null>(null)
+  const [safeDetails, setSafeDetails] = useState<any | null>(null)
+  const [safeDetailsLoading, setSafeDetailsLoading] = useState(false)
   const adminScrollRef = useRef<HTMLDivElement | null>(null)
   const [thumbTop, setThumbTop] = useState(0)
   const [thumbHeight, setThumbHeight] = useState(0)
@@ -70,6 +76,34 @@ export default function IdentityDashboard() {
     fetchDetails()
     return () => { mounted = false }
   }, [selectedAdminUsername])
+
+  // Fetch SafeID user details when a recent compromised username is selected
+  useEffect(() => {
+    let mounted = true
+    if (!selectedSafeUsername) return
+    setSafeDetails(null)
+    setSafeDetailsLoading(true)
+    const fetchDetails = async () => {
+      try {
+        const r = await fetch(`/api/users?username=${encodeURIComponent(selectedSafeUsername)}`)
+        if (!mounted) return
+        if (!r.ok) {
+          setSafeDetails(null)
+        } else {
+          const json = await r.json()
+          const user = Array.isArray(json) ? (json[0] || null) : (json && (json.users || json.data || json[0]) ? (json.users ? json.users[0] : (json.data ? json.data[0] : json[0])) : json)
+          setSafeDetails(user || json || null)
+        }
+      } catch (err) {
+        console.error('Error fetching safe details', err)
+        if (mounted) setSafeDetails(null)
+      } finally {
+        if (mounted) setSafeDetailsLoading(false)
+      }
+    }
+    fetchDetails()
+    return () => { mounted = false }
+  }, [selectedSafeUsername])
 
   const onThumbPointerDown = (clientY: number) => {
     const el = adminScrollRef.current
@@ -443,7 +477,7 @@ export default function IdentityDashboard() {
     <div className="p-6 grid grid-cols-3 gap-6 bg-slate-950 text-white min-h-screen">
       <div className="col-span-3 mb-2 flex items-center">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold mb-1">Identity Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-1">RapidIdentity Dashboard</h1>
           <p className="text-slate-400">Identity-centric security telemetry and trends</p>
         </div>
         <div className="ml-4">
@@ -459,38 +493,10 @@ export default function IdentityDashboard() {
         <CardContent>
           {adminContent}
 
-          {selectedAdminUsername ? (
-            <div className="mt-4 p-3 bg-slate-850 rounded relative">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-medium">Details: {selectedAdminUsername}</div>
-                <div>
-                  <button type="button" onClick={() => { setSelectedAdminUsername(null); setAdminDetails(null) }} className="text-xs text-white/60 hover:text-white">Close</button>
-                </div>
-              </div>
-              {adminDetailsLoading ? (
-                <div className="text-sm text-white/70">Loading details…</div>
-              ) : adminDetails ? (
-                <div className="text-sm text-white/80">
-                  {(() => {
-                    const name = adminDetails.name || adminDetails.displayName || adminDetails.username || '—'
-                    const email = adminDetails.email || adminDetails.mail || '—'
-                    const riskScore = adminDetails.riskScore ?? adminDetails.riskScoreNum ?? adminDetails.risk ?? '—'
-                    const riskField = adminDetails.risk ?? adminDetails.risks ?? adminDetails.riskDetail ?? '—'
-                    return (
-                      <>
-                        <div className="mb-1"><span className="text-white/70">Name: </span><span className="font-medium">{name}</span></div>
-                        <div className="mb-1"><span className="text-white/70">Email: </span><span className="font-medium">{email}</span></div>
-                        <div className="mb-1"><span className="text-white/70">Risk score: </span><span className="font-medium">{String(riskScore)}</span></div>
-                        <div className="mb-1"><span className="text-white/70">Risk: </span><span className="font-medium">{typeof riskField === 'string' ? riskField : JSON.stringify(riskField)}</span></div>
-                      </>
-                    )
-                  })()}
-                </div>
-              ) : (
-                <div className="text-sm text-white/70">No details available</div>
-              )}
-            </div>
-          ) : null}
+          {/* Admin details moved into a modal to avoid inline expansion */}
+          <Modal open={!!selectedAdminUsername} onClose={() => { setSelectedAdminUsername(null); setAdminDetails(null) }} title={selectedAdminUsername ?? 'User details'}>
+            <UserDetails loading={adminDetailsLoading} data={adminDetails} />
+          </Modal>
         </CardContent>
       </Card>
 
@@ -560,10 +566,10 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-      {/* Investigations: summary metrics + lists (new) */}
+      {/* Security Manager: summary metrics + lists (was Investigations) */}
       <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-amber-400"/> Investigations</CardTitle>
+          <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-amber-400"/> Security Manager</CardTitle>
         </CardHeader>
         <CardContent>
           {(() => {
@@ -631,7 +637,88 @@ export default function IdentityDashboard() {
         </CardContent>
       </Card>
 
-      {/* Trends & Anomalies remains a full row; the smaller summary cards are moved below it */}
+        {/* SafeID: compromised accounts visuals (new) - split into three columns */}
+        <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> SafeID</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-6">
+              {(() => {
+                const distribution = [
+                  { group: 'Students', emailOnly: 45, hashed: 12 },
+                  { group: 'Sponsored', emailOnly: 8, hashed: 3 },
+                  { group: 'Staff', emailOnly: 15, hashed: 6 },
+                ]
+
+                return (
+                  <div>
+                    <h4 className="text-lg font-bold text-white/80 mb-2">Compromised Account Distribution</h4>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={distribution} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="group" tick={{ fill: 'rgba(255,255,255,0.85)' }} />
+                        <YAxis tick={{ fill: 'rgba(255,255,255,0.85)' }} />
+                        <Tooltip />
+                        <Bar dataKey="emailOnly" name="Email only" fill="#f97316" />
+                        <Bar dataKey="hashed" name="Hashed password" fill="#7c3aed" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              })()}
+
+              {(() => {
+                const timeseries = [
+                  { day: '2025-10-01', emailOnly: 5, hashed: 1 },
+                  { day: '2025-10-08', emailOnly: 12, hashed: 3 },
+                  { day: '2025-10-15', emailOnly: 18, hashed: 4 },
+                  { day: '2025-10-22', emailOnly: 20, hashed: 6 },
+                  { day: '2025-10-29', emailOnly: 25, hashed: 7 },
+                ]
+                return (
+                  <div>
+                    <h4 className="text-lg font-bold text-white/80 mb-2">Compromised accounts over time</h4>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={timeseries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.85)', fontSize: 12 }} />
+                        <YAxis tick={{ fill: 'rgba(255,255,255,0.85)' }} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="emailOnly" stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} name="Email only" />
+                        <Line type="monotone" dataKey="hashed" stroke="#7c3aed" strokeWidth={2} dot={{ r: 2 }} name="Hashed password" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )
+              })()}
+
+              {(() => {
+                const recent = (riskUsers && riskUsers.length) ? (riskUsers.slice(0,5).map((u: any) => u.username || u.email || u.name || 'unknown')) : ['alice@example.com','bob@example.com','carol@example.com','dave@example.com','eve@example.com']
+                return (
+                  <div>
+                    <h4 className="text-lg font-bold text-white/80 mb-2">Most recent compromised accounts</h4>
+                    <ul className="space-y-2 text-sm text-white/80">
+                      {recent.map((u: any, i: number) => (
+                        <li key={i} className="p-2 bg-slate-850 rounded flex items-center justify-between">
+                          <div className="font-medium truncate max-w-[260px]"> 
+                            <button type="button" onClick={() => setSelectedSafeUsername(String(u))} className="text-left w-full hover:underline">{u}</button>
+                          </div>
+                          <div className="text-xs text-white/70">Detected</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })()}
+            </div>
+          </CardContent>
+          {/* SafeID details panel (appears when a recent username is selected) */}
+          {/* SafeID details now shown in a modal */}
+          <Modal open={!!selectedSafeUsername} onClose={() => { setSelectedSafeUsername(null); setSafeDetails(null) }} title={selectedSafeUsername ?? 'User details'}>
+            <UserDetails loading={safeDetailsLoading} data={safeDetails} />
+          </Modal>
+        </Card>
+
+        {/* Trends & Anomalies remains a full row; the smaller summary cards are moved below it */}
       <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><AlertTriangle className="text-cyan-400"/> Trends & Anomalies</CardTitle>
