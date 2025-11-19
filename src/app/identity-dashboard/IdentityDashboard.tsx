@@ -9,6 +9,7 @@ import type { IdentityData } from '@/lib/types/identity'
 import Image from 'next/image'
 import Modal from '@/components/ui/modal'
 import UserDetails from '@/components/ui/user-details'
+import ChatBox from '@/components/ui/chat-box'
 
 export default function IdentityDashboard() {
   const [data, setData] = useState<IdentityData | null>(null)
@@ -485,7 +486,7 @@ export default function IdentityDashboard() {
         </div>
       </div>
 
-      {/* Administrators by group (new) */}
+    {/* Administrators by group (new) */}
   <Card className="bg-slate-900 border-slate-800 text-white col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Shield className="text-blue-400"/> Privileged Users</CardTitle>
@@ -499,7 +500,6 @@ export default function IdentityDashboard() {
           </Modal>
         </CardContent>
       </Card>
-
       {/* keep High Risk Score immediately after Privileged Users (moved) */}
       <Card className="bg-slate-900 border-slate-800 text-white col-span-1">
         <CardHeader>
@@ -565,6 +565,9 @@ export default function IdentityDashboard() {
           </div>
         </CardContent>
       </Card>
+
+    {/* Chat box (full width) moved below Security Manager */}
+    <ChatBox />
 
       {/* Security Manager: summary metrics + lists (was Investigations) */}
       <Card className="col-span-3 bg-slate-900 border-slate-800 text-white">
