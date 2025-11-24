@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { Shield, Users, Lock, AlertTriangle, Activity, Globe, TrendingUp } from "lucide-react"
@@ -7,6 +8,24 @@ import { motion } from "framer-motion"
 import Image from 'next/image'
 
 export default function AzureADSecurityDashboard() {
+  const [remote, setRemote] = useState<any | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/idauto/azure-data').then(r => r.json()).then(j => { if (mounted) setRemote(j) }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
+  const data = {
+    highRiskUsers: remote?.highRiskUsers ?? 12,
+    leakedCredentials: remote?.leakedCredentials ?? 8,
+    mfaAdoptionPercent: remote?.mfaAdoptionPercent ?? 92,
+    legacyAuthUsagePercent: remote?.legacyAuthUsagePercent ?? 5,
+    globalAdmins: remote?.globalAdmins ?? 4,
+    pimActivations7d: remote?.pimActivations7d ?? 23,
+    secureScoreTrend: remote?.secureScoreTrend ?? [{month:'Jul',score:68},{month:'Aug',score:71},{month:'Sep',score:74},{month:'Oct',score:78}],
+  }
+
   return (
     <div className="p-6 grid grid-cols-3 gap-6 bg-slate-950 text-white min-h-screen">
       <motion.div className="col-span-3 mb-2 flex items-center" initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}}>
@@ -27,12 +46,12 @@ export default function AzureADSecurityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">High-Risk Users</h3>
-              <p className="text-4xl font-bold text-red-400">12</p>
+              <p className="text-4xl font-bold text-red-400">{data.highRiskUsers}</p>
               <p className="text-white/70">+3 this week</p>
             </div>
             <div>
               <h3 className="text-lg text-white">Leaked Credentials</h3>
-              <p className="text-4xl font-bold text-orange-400">8</p>
+              <p className="text-4xl font-bold text-orange-400">{data.leakedCredentials}</p>
               <p className="text-white/70">Detected via threat feed</p>
             </div>
           </div>
@@ -54,11 +73,11 @@ export default function AzureADSecurityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">MFA Adoption</h3>
-              <p className="text-4xl font-bold text-green-400">92%</p>
+              <p className="text-4xl font-bold text-green-400">{data.mfaAdoptionPercent}%</p>
             </div>
             <div>
               <h3 className="text-lg text-white">Legacy Auth Usage</h3>
-              <p className="text-4xl font-bold text-yellow-400">5%</p>
+              <p className="text-4xl font-bold text-yellow-400">{data.legacyAuthUsagePercent}%</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={120}>
@@ -79,12 +98,12 @@ export default function AzureADSecurityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">Global Admins</h3>
-              <p className="text-4xl font-bold text-red-400">4</p>
+              <p className="text-4xl font-bold text-red-400">{data.globalAdmins}</p>
               <p className="text-white/70">Permanent access</p>
             </div>
             <div>
               <h3 className="text-lg text-white">PIM Activations (7d)</h3>
-              <p className="text-4xl font-bold text-blue-400">23</p>
+              <p className="text-4xl font-bold text-blue-400">{data.pimActivations7d}</p>
             </div>
           </div>
         </CardContent>
@@ -144,9 +163,9 @@ export default function AzureADSecurityDashboard() {
             <div>
               <h3 className="text-lg mb-2 text-white">MFA Failure Rate (30 Days)</h3>
               <ResponsiveContainer width="100%" height={120}>
-                <AreaChart data={[{day:'Week 1',val:4},{day:'Week 2',val:6},{day:'Week 3',val:8},{day:'Week 4',val:3}]}> 
-                  <Area type="monotone" dataKey="val" stroke="#06b6d4" fill="#0ea5e9" fillOpacity={0.3}/>
-                  <XAxis dataKey="day"/>
+                <AreaChart data={data.secureScoreTrend}> 
+                  <Area type="monotone" dataKey="score" stroke="#06b6d4" fill="#0ea5e9" fillOpacity={0.3}/>
+                  <XAxis dataKey="month"/>
                   <Tooltip />
                 </AreaChart>
               </ResponsiveContainer>
@@ -163,7 +182,7 @@ export default function AzureADSecurityDashboard() {
             <div>
               <h3 className="text-lg mb-2 text-white">Secure Score Trend</h3>
               <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={[{month:'Jul',score:68},{month:'Aug',score:71},{month:'Sep',score:74},{month:'Oct',score:78}]}> 
+                <LineChart data={data.secureScoreTrend}> 
                   <Line type="monotone" dataKey="score" stroke="#22d3ee" strokeWidth={2}/>
                   <XAxis dataKey="month"/>
                   <Tooltip />

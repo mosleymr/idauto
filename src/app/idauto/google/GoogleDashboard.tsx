@@ -1,13 +1,34 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { Shield, Lock, Users, AlertTriangle, Activity, Key, Cloud, Mail, Share2 } from "lucide-react"
 import { motion } from "framer-motion"
 import Image from 'next/image'
  
-
 export default function GoogleWorkspaceIdentityDashboard() {
+  const [remote, setRemote] = useState<any | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/idauto/google-data').then(r => r.json()).then(j => { if (mounted) setRemote(j) }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
+  const data = {
+    highRiskAccounts: remote?.highRiskAccounts ?? 15,
+    suspiciousLogins: remote?.suspiciousLogins ?? 42,
+    mfaEnrollmentPercent: remote?.mfaEnrollmentPercent ?? 88,
+    failedMfaAttempts: remote?.failedMfaAttempts ?? 27,
+    superAdmins: remote?.superAdmins ?? 5,
+    delegatedAdmins: remote?.delegatedAdmins ?? 12,
+    thirdPartyAdminApps: remote?.thirdPartyAdminApps ?? 3,
+    phishingEmailsDetected: remote?.phishingEmailsDetected ?? 128,
+    unsafeLinksBlocked: remote?.unsafeLinksBlocked ?? 312,
+    trends: remote?.trends ?? [{day:'Mon',val:10},{day:'Tue',val:15},{day:'Wed',val:18},{day:'Thu',val:25}],
+  }
+
   return (
     <div className="p-6 grid grid-cols-3 gap-6 bg-slate-950 text-white min-h-screen">
       <motion.div className="col-span-3 mb-2 flex items-center" initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}}>
@@ -28,17 +49,17 @@ export default function GoogleWorkspaceIdentityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">High-Risk Accounts</h3>
-              <p className="text-4xl font-bold text-red-400">15</p>
+              <p className="text-4xl font-bold text-red-400">{data.highRiskAccounts}</p>
               <p className="text-white/70">Detected this week</p>
             </div>
             <div>
               <h3 className="text-lg text-white">Suspicious Logins</h3>
-              <p className="text-4xl font-bold text-orange-400">42</p>
+              <p className="text-4xl font-bold text-orange-400">{data.suspiciousLogins}</p>
               <p className="text-white/70">From unrecognized devices</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={[{day:'Mon',val:10},{day:'Tue',val:15},{day:'Wed',val:18},{day:'Thu',val:25}]}> 
+            <LineChart data={data.trends}> 
               <Line type="monotone" dataKey="val" stroke="#60a5fa" strokeWidth={2}/>
               <XAxis dataKey="day" hide/>
               <Tooltip />
@@ -55,17 +76,17 @@ export default function GoogleWorkspaceIdentityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">MFA Enrollment</h3>
-              <p className="text-4xl font-bold text-green-400">88%</p>
+              <p className="text-4xl font-bold text-green-400">{data.mfaEnrollmentPercent}%</p>
               <p className="text-white/70">Organization-wide</p>
             </div>
             <div>
               <h3 className="text-lg text-white">Failed MFA Attempts</h3>
-              <p className="text-4xl font-bold text-yellow-400">27</p>
+              <p className="text-4xl font-bold text-yellow-400">{data.failedMfaAttempts}</p>
               <p className="text-white/70">Past 24 hours</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={[{type:'MFA Success',val:520},{type:'MFA Failures',val:27}]}> 
+            <BarChart data={[{type:'MFA Success',val:520},{type:'MFA Failures',val:data.failedMfaAttempts}]}> 
               <Bar dataKey="val" fill="#818cf8" radius={[4,4,0,0]}/>
               <XAxis dataKey="type"/>
               <Tooltip />
@@ -80,9 +101,9 @@ export default function GoogleWorkspaceIdentityDashboard() {
         </CardHeader>
         <CardContent>
           <ul className="text-white/80 text-sm list-disc pl-4">
-            <li>Super Admins: <span className="text-red-400">5</span> (2 without MFA)</li>
-            <li>Delegated Admins: <span className="text-yellow-400">12</span></li>
-            <li>Third-Party Admin Apps: <span className="text-orange-400">3</span></li>
+            <li>Super Admins: <span className="text-red-400">{data.superAdmins}</span> (2 without MFA)</li>
+            <li>Delegated Admins: <span className="text-yellow-400">{data.delegatedAdmins}</span></li>
+            <li>Third-Party Admin Apps: <span className="text-orange-400">{data.thirdPartyAdminApps}</span></li>
           </ul>
         </CardContent>
       </Card>
@@ -138,12 +159,12 @@ export default function GoogleWorkspaceIdentityDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-lg text-white">Phishing Emails Detected</h3>
-              <p className="text-4xl font-bold text-red-400">128</p>
+              <p className="text-4xl font-bold text-red-400">{data.phishingEmailsDetected}</p>
               <p className="text-white/70">Last 7 days</p>
             </div>
             <div>
               <h3 className="text-lg text-white">Unsafe Links Blocked</h3>
-              <p className="text-4xl font-bold text-yellow-400">312</p>
+              <p className="text-4xl font-bold text-yellow-400">{data.unsafeLinksBlocked}</p>
               <p className="text-white/70">Across organization</p>
             </div>
           </div>
